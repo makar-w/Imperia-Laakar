@@ -62,7 +62,7 @@ form textarea{resize:none;max-height:110px;flex:1}
 #rec video{width:240px;height:240px;border-radius:50%;object-fit:cover;border:3px solid var(--gold)}
 </style></head><body>
 
-<section id="join"><div class="box">
+<section id="join" class="hidden"><div class="box">
 <svg width="64" height="48" viewBox="0 0 64 48"><path d="M4 40V12l14 14 14-20 14 20 14-14v28z" fill="#d4af37"/><circle cx="4" cy="10" r="3" fill="#d4af37"/><circle cx="32" cy="4" r="3" fill="#d4af37"/><circle cx="60" cy="10" r="3" fill="#d4af37"/></svg>
 <h1>Imperia</h1>
 <div id="stepName">
@@ -78,7 +78,7 @@ form textarea{resize:none;max-height:110px;flex:1}
 <button id="passBack" class="btn alt">Отступить</button>
 </div>
 <p id="joinErr" class="err"></p>
-<p style="opacity:.35;font-size:12px;margin:14px 0 0">v9</p>
+<p style="opacity:.35;font-size:12px;margin:14px 0 0">v10</p>
 </div></section>
 
 <section id="chat" class="hidden">
@@ -108,7 +108,7 @@ var $=function(i){return document.getElementById(i)};
 document.documentElement.dataset.theme=localStorage.getItem("theme")||"light";
 function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
 var star=function(n){return "★".repeat(n)};
-var me={},users={},meta={},msgs=[],isAdmin=false,wantEmp=false,reply=null,unsubs=[],baseKick=null,adminBody=null,seenMe=false;
+var me={},users={},meta={},msgs=[],isAdmin=false,wantEmp=false,reply=null,unsubs=[],baseKick=null,adminBody=null,seenMe=false,canon={},groups={};
 function ms(t){return t&&t.toMillis?t.toMillis():0}
 function err(t){$("joinErr").textContent=t||""}
 
@@ -125,16 +125,51 @@ $("passOk").onclick=async function(){
     if($("name").value.trim())$("enter").click();else $("name").focus();
   }catch(e){err((e.code==="permission-denied"?"База отказала: пароль неверный или правила не опубликованы. ":"")+"Код: "+(e.code||e.message))}
 };
+function key(n){return (n||"").trim().toLowerCase()}
 $("enter").onclick=async function(){
   var name=$("name").value.trim();if(!name)return err("Назови своё имя.");
   try{
     await auth.signInAnonymously();var uid=auth.currentUser.uid;
     var ref=db.doc("users/"+uid),s=await ref.get();
-    if(!s.exists){await ref.set({name:name,avatar:"",rank:wantEmp?6:3,mutedUntil:new Date(0),joinedAt:TS()})}
-    else{await ref.update({name:name});if(wantEmp&&s.data().rank!==6)await ref.update({rank:6})}
-    localStorage.setItem("name",name);err();start(uid);
+    if(s.exists){
+      await ref.update({name:name});if(wantEmp&&s.data().rank!==6)await ref.update({rank:6});
+      localStorage.setItem("name",name);err();return start(uid);
+    }
+    var all=await db.collection("users").get();
+    var same=all.docs.filter(function(d){return key(d.data().name)===key(name)});
+    if(!same.length)return await createProfile(uid,name,null,[]);
+    same.sort(function(a,b){return (b.data().rank||0)-(a.data().rank||0)});
+    var b=sheet("В чертогах уже есть «"+same[0].data().name+"»");
+    b.appendChild(el("p",null,"Это твой профиль?"));
+    btn(b,"Да, это я",function(){b.parentNode.remove();guard(createProfile(uid,same[0].data().name,same[0].data(),same))});
+    btn(b,"Нет, другое имя",function(){b.parentNode.remove();err("Выбери другое имя.");$("name").focus()},true);
   }catch(e){err("Не удалось войти: "+(e.code||e.message))}
 };
+async function createProfile(uid,name,old,olds){
+  var base={name:name,avatar:"",mutedUntil:new Date(0),joinedAt:TS()},ref=db.doc("users/"+uid),ranks=[];
+  if(old&&!wantEmp&&old.rank>3&&old.rank<6)ranks.push(old.rank);
+  ranks.push(wantEmp?6:3);
+  for(var i=0;i<ranks.length;i++){
+    try{await ref.set(Object.assign({rank:ranks[i]},base));break}catch(e){if(i===ranks.length-1)throw e}
+  }
+  if(old){
+    var u={};if(old.avatar)u.avatar=old.avatar;if(old.title)u.title=old.title;
+    if(Object.keys(u).length){try{await ref.update(u)}catch(e){}}
+    /* старые дубли с этим именем убираем, если база разрешит */
+    olds.forEach(function(d){if(d.id!==uid)d.ref.delete().catch(function(){})});
+  }
+  localStorage.setItem("name",name);err();start(uid);
+}
+/* автовход: если устройство уже входило, лобби пропускаем */
+var booted=false;
+function showJoin(){if(booted)return;booted=true;$("join").classList.remove("hidden")}
+auth.onAuthStateChanged(async function(u){
+  if(booted)return;
+  try{if(u){var s=await db.doc("users/"+u.uid).get();if(s.exists){booted=true;return start(u.uid)}}}catch(e){}
+  showJoin();
+});
+setTimeout(showJoin,5000);
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
 
 function leave(text){
   unsubs.forEach(function(u){u()});unsubs=[];baseKick=null;seenMe=false;
@@ -149,10 +184,10 @@ function start(uid){
   me={id:uid};seenMe=false;$("join").classList.add("hidden");$("chat").classList.remove("hidden");
   els={};$("list").innerHTML="";delete $("list").dataset.done;
   unsubs.push(db.collection("users").onSnapshot(function(s){
-    users={};s.forEach(function(d){users[d.id]=Object.assign({id:d.id},d.data())});
+    users={};s.forEach(function(d){users[d.id]=Object.assign({id:d.id},d.data())});buildGroups();
     if(!users[uid]){if(seenMe)return leave("Тебя изгнали из королевства. Можно вернуться.");return}seenMe=true;me=users[uid];
     var k=ms(me.kickedAt);if(baseKick===null)baseKick=k;else if(k>baseKick)return leave("Тебя изгнали из королевства. Можно вернуться.");
-    $("me").textContent=star(me.rank)+" "+me.name+(me.title?" · "+me.title:"")+" · v9";
+    $("me").textContent=star(me.rank)+" "+me.name+(me.title?" · "+me.title:"")+" · v10";
     $("adm").classList.toggle("hidden",me.rank!==6);
     checkMute();refreshWho();
   },function(e){leave("Нет доступа: "+e.code)}));
@@ -177,23 +212,40 @@ function pad(n){return n<10?"0"+n:n}
 function mediaSrc(m,node,frag){
   fetch(m.data).then(function(r){return r.blob()}).then(function(b){node.src=URL.createObjectURL(b)+frag}).catch(function(){node.src=m.data});
 }
+function buildGroups(){
+  var g={};canon={};groups={};
+  Object.keys(users).forEach(function(k){var u=users[k],n=key(u.name);(g[n]=g[n]||[]).push(u)});
+  Object.keys(g).forEach(function(n){
+    g[n].sort(function(a,b){return (b.rank||0)-(a.rank||0)||ms(a.joinedAt)-ms(b.joinedAt)});
+    g[n].forEach(function(u){canon[u.id]=g[n][0].id});groups[n]=g[n];
+  });
+}
+function P(m){
+  var u=users[m.uid];if(u)return users[canon[u.id]]||u;
+  var g=groups[key(m.name)];return g?g[0]:{name:m.name,rank:3,avatar:""};
+}
+function isMine(m){
+  var u=users[m.uid],g=groups[key(m.name)],c=u?canon[m.uid]:(g?g[0].id:null);
+  return c?c===canon[me.id]||m.uid===me.id:m.uid===me.id;
+}
 function whoEl(m){
-  var u=users[m.uid]||{name:m.name,rank:3},w=el("div","who");
+  var u=P(m),w=el("div","who");
   w.appendChild(document.createTextNode(u.name));
   w.appendChild(el("small",null,star(u.rank||3)));
   return w;
 }
-function avEl(m){var u=users[m.uid]||{name:m.name,avatar:""};return av(u.avatar,u.name,"av")}
+function avEl(m){var u=P(m);return av(u.avatar,u.name,"av")}
 function refreshWho(){
   Object.keys(els).forEach(function(k){
     var e=els[k];if(!e._m)return;
-    try{e.querySelector(".msg").replaceChild(whoEl(e._m),e.querySelector(".who"));
+    try{e.classList.toggle("mine",isMine(e._m));
+    e.querySelector(".msg").replaceChild(whoEl(e._m),e.querySelector(".who"));
     e.replaceChild(avEl(e._m),e.querySelector(".av"))}catch(x){}
   });
 }
 function msgEl(m){
   if(m.type==="system"){return el("div","sys",m.text)}
-  var mine=m.uid===me.id,r=el("div","r"+(mine?" mine":"")),d=el("div","msg");
+  var mine=isMine(m),r=el("div","r"+(mine?" mine":"")),d=el("div","msg");
   d.dataset.id=m.id;r._m=m;r.appendChild(avEl(m));r.appendChild(d);d.appendChild(whoEl(m));
   if(m.reply)d.appendChild(el("div","quote",m.reply.name+": "+m.reply.text));
   if(m.type==="image"){var i=new Image();i.className="ph";i.src=m.data;d.appendChild(i)}
@@ -268,16 +320,26 @@ function themePicker(){
   [["light","Дневное"],["dark","Ночное"]].forEach(function(t){
     btn(g,t[1],function(){localStorage.setItem("theme",t[0]);document.documentElement.dataset.theme=t[0];b.parentNode.remove()},true)});
 }
+function copyText(t){
+  if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(t);
+  return new Promise(function(ok,no){
+    var a=el("textarea");a.value=t;a.style.cssText="position:fixed;opacity:0;top:0";document.body.appendChild(a);a.focus();a.select();
+    try{document.execCommand("copy")?ok():no()}catch(e){no(e)}a.remove();
+  });
+}
 function msgMenu(id){
   var m=msgs.find(function(x){return x.id===id});if(!m||m.type==="system")return;
   var b=sheet("Свиток"),txt=m.text||"";
   btn(b,"Дать ответ",function(){setReply({id:m.id,name:m.name,text:txt.slice(0,60)});b.parentNode.remove()});
+  if(!m.type||m.type==="text"){var cp=btn(b,"📋 Скопировать",function(){
+    copyText(txt).then(function(){cp.textContent="✓ Скопировано";setTimeout(function(){b.parentNode.remove()},600)},function(){cp.textContent="Не вышло скопировать"});
+  },true)}
   if(me.rank===6){
     var pinned=meta.pinned&&meta.pinned.id===m.id;
     btn(b,pinned?"Снять с врат":"Прибить к вратам",function(){
       db.doc("meta/chat").set({pinned:pinned?null:{id:m.id,name:m.name,text:txt.slice(0,80)}},{merge:true});b.parentNode.remove()},true);
   }
-  if(me.rank===6||m.uid===me.id)btn(b,"Сжечь свиток",function(){db.collection("messages").doc(m.id).delete();b.parentNode.remove()},true);
+  if(me.rank===6||isMine(m))btn(b,"Сжечь свиток",function(){guard(db.collection("messages").doc(m.id).delete());b.parentNode.remove()},true);
 }
 
 /* жесты: зажать сообщение = меню, зажать фон = выбор фона, смахнуть влево = ответ */
@@ -324,14 +386,14 @@ $("top").onclick=function(){
 function rankTable(ov){
   var out=[];
   for(var r=6;r>=1;r--){
-    var n=Object.keys(users).map(function(k){return users[k]}).filter(function(u){return(ov&&ov.id===u.id?ov.rank:u.rank)===r}).map(function(u){return u.name+(u.title?" ("+u.title+")":"")});
+    var n=everyone().filter(function(u){return(ov&&ov.id===u.id?ov.rank:u.rank)===r}).map(function(u){return u.name+(u.title?" ("+u.title+")":"")});
     out.push(star(r)+" — "+(n.join(", ")||"—"));
   }
   return out.join("\n");
 }
 async function setRank(u,r){
-  if(r<1||r>6||me.rank!==6||u.id===me.id)return;
-  try{await db.doc("users/"+u.id).update({rank:r})}catch(e){return say("Не вышло: "+(e.code||e.message))}
+  if(r<1||r>6||me.rank!==6||u.id===canon[me.id])return;
+  try{await upd(u,{rank:r})}catch(e){return say("Не вышло: "+(e.code||e.message))}
   send({type:"system",text:"Милость императора: "+u.name+" → "+star(r)+"\n\n"+rankTable({id:u.id,rank:r})});
 }
 async function clearChat(){
@@ -343,8 +405,10 @@ async function clearChat(){
     document.querySelectorAll(".ov").forEach(function(x){x.remove()});
   }catch(e){say("Геноцид не удался: "+(e.code||e.message))}
 }
-function everyone(){return Object.keys(users).map(function(k){return users[k]}).sort(function(a,b){return b.rank-a.rank})}
-function others(){return everyone().filter(function(u){return u.id!==me.id})}
+function everyone(){return Object.keys(groups).map(function(n){return groups[n][0]}).sort(function(a,b){return b.rank-a.rank})}
+function others(){return everyone().filter(function(u){return u.id!==canon[me.id]})}
+function grp(u){return groups[key(u.name)]||[u]}
+function upd(u,d){return Promise.all(grp(u).map(function(x){return db.doc("users/"+x.id).update(d)}))}
 function pick(title,list,act,empty){
   var b=sheet(title);
   if(!list.length)b.appendChild(el("p",null,empty||"Подданных ещё нет."));
@@ -357,7 +421,7 @@ function pick(title,list,act,empty){
 function muteSheet(u){
   var b=sheet("Темница: "+u.name),g=el("div","bgs");b.appendChild(g);
   [[5,"На 5 минут"],[30,"На полчаса"],[60,"На час"],[1440,"На сутки"]].forEach(function(o){
-    btn(g,o[1],function(){b.parentNode.remove();guard(db.doc("users/"+u.id).update({mutedUntil:new Date(Date.now()+o[0]*60000)}))},true)});
+    btn(g,o[1],function(){b.parentNode.remove();guard(upd(u,{mutedUntil:new Date(Date.now()+o[0]*60000)}))},true)});
 }
 function rankSheet(u){
   var b=sheet("Звёзды: "+u.name),g=el("div","bgs");b.appendChild(g);
@@ -367,11 +431,11 @@ $("adm").onclick=function(){
   if(me.rank!==6)return;
   var b=sheet("Совет императора"),g=el("div","bgs");b.appendChild(g);
   btn(g,"⛓ Бросить в темницу",function(){pick("Кого бросить в темницу",others(),muteSheet)},true);
-  btn(g,"🗝 Выпустить из темницы",function(){pick("Кого выпустить из темницы",everyone().filter(function(u){return ms(u.mutedUntil)>Date.now()}),function(u){guard(db.doc("users/"+u.id).update({mutedUntil:new Date(0)}))},"Темница пуста.")},true);
+  btn(g,"🗝 Выпустить из темницы",function(){pick("Кого выпустить из темницы",everyone().filter(function(u){return ms(u.mutedUntil)>Date.now()}),function(u){guard(upd(u,{mutedUntil:new Date(0)}))},"Темница пуста.")},true);
   btn(g,"⚔ Изгнать из королевства",function(){pick("Кого изгнать",others(),function(u){confirmBox("Изгнать "+u.name+" из королевства?",function(){
-    guard(db.doc("users/"+u.id).update({kickedAt:TS()}).then(function(){return new Promise(function(r){setTimeout(r,1200)})}).then(function(){return db.doc("users/"+u.id).delete()}))})})},true);
+    var ds=grp(u);guard(upd(u,{kickedAt:TS()}).then(function(){return new Promise(function(r){setTimeout(r,1200)})}).then(function(){return Promise.all(ds.map(function(x){return db.doc("users/"+x.id).delete()}))}))})})},true);
   btn(g,"★ Пожаловать звёзды",function(){pick("Кому пожаловать звёзды",others(),rankSheet)},true);
-  btn(g,"📜 Пожаловать титул",function(){pick("Кому пожаловать титул",everyone(),function(u){askBox("Титул для "+u.name+" (пусто — лишить)",u.title||"",function(v){guard(db.doc("users/"+u.id).update({title:v.slice(0,30)}))})})},true);
+  btn(g,"📜 Пожаловать титул",function(){pick("Кому пожаловать титул",everyone(),function(u){askBox("Титул для "+u.name+" (пусто — лишить)",u.title||"",function(v){guard(upd(u,{title:v.slice(0,30)}))})})},true);
   btn(g,"🔥 Устроить геноцид сообщений",function(){confirmBox("Устроить геноцид сообщений? Все они будут уничтожены навсегда.",clearChat)},true);
 };
 </script>
