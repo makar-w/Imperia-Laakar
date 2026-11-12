@@ -100,7 +100,7 @@ form textarea{resize:none;max-height:110px;flex:1}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 firebase.initializeApp({apiKey:"AIzaSyA-VngdnbgfjUTnwMl0kr8IpvJZDiQ29Rg",authDomain:"imperia-laakar.firebaseapp.com",projectId:"imperia-laakar",storageBucket:"imperia-laakar.firebasestorage.app",messagingSenderId:"232422304071",appId:"1:232422304071:web:551d09d7ddc21164734462"});
-var db=firebase.firestore(),auth=firebase.auth(),TS=firebase.firestore.FieldValue.serverTimestamp;
+var auth=firebase.auth(),db=firebase.firestore(),TS=firebase.firestore.FieldValue.serverTimestamp;
 var $=function(i){return document.getElementById(i)};
 function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
 var RANKS=["","Место у параши","Пушечное мясо","Воин","Богач","Тортик Наполеон","Император"];
@@ -120,22 +120,16 @@ $("passOk").onclick=async function(){
     await db.doc("admins/"+auth.currentUser.uid).set({key:$("pass").value.trim()});
     isAdmin=true;wantEmp=true;err();
     $("stepPass").classList.add("hidden");$("stepName").classList.remove("hidden");
-    $("name").focus();
+    if($("name").value.trim())$("enter").click();else $("name").focus();
   }catch(e){err((e.code==="permission-denied"?"База отказала: пароль неверный или правила не опубликованы. ":"")+"Код: "+(e.code||e.message))}
 };
 $("enter").onclick=async function(){
   var name=$("name").value.trim();if(!name)return err("Введи имя.");
   try{
     await auth.signInAnonymously();var uid=auth.currentUser.uid;
-    if(!isAdmin){isAdmin=(await db.doc("admins/"+uid).get()).exists}
     var ref=db.doc("users/"+uid),s=await ref.get();
-    if(isAdmin){
-      var q=await db.collection("users").where("rank","==",6).get();
-      var others=q.docs.filter(function(d){return d.id!==uid}).length;
-      if(others>=2)return err("Императоров уже двое.");
-    }
-    if(!s.exists){await ref.set({name:name,avatar:"",rank:isAdmin?6:3,mutedUntil:new Date(0),joinedAt:TS()})}
-    else{await ref.update({name:name});if(isAdmin&&s.data().rank!==6)await ref.update({rank:6})}
+    if(!s.exists){await ref.set({name:name,avatar:"",rank:wantEmp?6:3,mutedUntil:new Date(0),joinedAt:TS()})}
+    else{await ref.update({name:name});if(wantEmp&&s.data().rank!==6)await ref.update({rank:6})}
     localStorage.setItem("name",name);err();start(uid);
   }catch(e){err("Не удалось войти: "+(e.code||e.message))}
 };
@@ -306,15 +300,14 @@ function rankTable(ov){
   return out.join("\n");
 }
 async function setRank(u,r){
-  if(r<1||r>6||u.rank>=me.rank&&u.id!==me.id)return;
-  if(r===6&&Object.keys(users).filter(function(k){return users[k].rank===6}).length>=2)return alert("Императоров уже двое.");
+  if(r<1||r>6||me.rank!==6||u.id===me.id)return;
   await db.doc("users/"+u.id).update({rank:r});
   send({type:"system",text:"Рейтинг изменён: "+u.name+" → "+star(r)+" "+RANKS[r]+"\n\n"+rankTable({id:u.id,rank:r})});
 }
 function fillAdmin(){
   adminBody.innerHTML="";
   Object.keys(users).map(function(k){return users[k]}).sort(function(a,b){return b.rank-a.rank}).forEach(function(u){
-    var r=el("div","row"),locked=u.rank>=me.rank;
+    var r=el("div","row"),locked=u.id===me.id;
     r.appendChild(av(u.avatar,u.name,"sm"));
     r.appendChild(el("div","n",star(u.rank)+" "+u.name+(ms(u.mutedUntil)>Date.now()?" 🔇":"")));
     if(!locked){
@@ -323,7 +316,7 @@ function fillAdmin(){
       s.onchange=function(){if(s.value!=="")db.doc("users/"+u.id).update({mutedUntil:new Date(Date.now()+s.value*60000)})};
       var k=el("button",null,"Кик");k.onclick=function(){if(confirm("Кикнуть "+u.name+"?"))db.doc("users/"+u.id).update({kickedAt:TS()})};
       r.append(d,p,s,k);
-    }else r.appendChild(el("small",null,"защищён"));
+    }else r.appendChild(el("small",null,"это ты"));
     adminBody.appendChild(r);
   });
 }
