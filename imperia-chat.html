@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Imperia — чат</title>
+<style>
+  :root {
+    --bg: #f3f1ec;
+    --surface: #ffffff;
+    --ink: #1c2430;
+    --muted: #6b7482;
+    --line: #dcd8cf;
+    --accent: #1f3a8a;
+    --accent-ink: #ffffff;
+    --mine: #1f3a8a;
+    --mine-ink: #ffffff;
+    --theirs: #ffffff;
+    --danger: #b3261e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12161d;
+      --surface: #1b212b;
+      --ink: #e8eaee;
+      --muted: #8d97a6;
+      --line: #2b3340;
+      --accent: #7f9bf0;
+      --accent-ink: #0d1220;
+      --mine: #3552c4;
+      --mine-ink: #ffffff;
+      --theirs: #1f2631;
+      --danger: #f2877f;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.4;
+    -webkit-text-size-adjust: 100%;
+  }
+  .hidden { display: none !important; }
+
+  /* Вход */
+  #join {
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+  }
+  .join-box { width: 100%; max-width: 420px; }
+  h1 { font-size: 30px; margin: 0 0 4px; letter-spacing: -0.02em; }
+  .sub { color: var(--muted); margin: 0 0 22px; }
+  label { display: block; font-size: 14px; color: var(--muted); margin: 14px 0 6px; }
+  input[type="text"] {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 16px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  input[type="text"]:focus-visible, textarea:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .rules {
+    margin: 18px 0 10px;
+    padding: 14px 16px;
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    border-radius: 0 10px 10px 0;
+  }
+  .rules b { display: block; margin-bottom: 6px; }
+  .rules ol { margin: 0; padding-left: 20px; }
+  .rules li { margin: 3px 0; }
+  .check { display: flex; gap: 10px; align-items: flex-start; margin: 14px 0; font-size: 15px; color: var(--ink); }
+  .check input { width: 20px; height: 20px; margin-top: 2px; flex: none; }
+  .primary {
+    width: 100%;
+    padding: 13px 16px;
+    font-size: 16px;
+    font-weight: 600;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: 0;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .error { color: var(--danger); min-height: 20px; margin: 8px 0 0; font-size: 14px; }
+
+  /* Чат */
+  #chat {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  header .title { font-weight: 700; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  header .me { color: var(--muted); font-size: 13px; }
+  .linkbtn {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    flex: none;
+  }
+  #status {
+    flex: none;
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+    padding: 6px 12px;
+    background: var(--bg);
+  }
+  #status.bad { color: var(--danger); }
+  #list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 14px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .empty { margin: auto; color: var(--muted); text-align: center; }
+  .msg { max-width: 82%; padding: 8px 12px; border-radius: 14px; background: var(--theirs); border: 1px solid var(--line); align-self: flex-start; word-wrap: break-word; overflow-wrap: anywhere; }
+  .msg.mine { align-self: flex-end; background: var(--mine); color: var(--mine-ink); border-color: transparent; }
+  .msg .who { font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 2px; }
+  .msg .text { white-space: pre-wrap; }
+  .msg .time { font-size: 11px; opacity: 0.6; text-align: right; margin-top: 3px; }
+  .gap { margin-top: 10px; }
+  form {
+    flex: none;
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+  }
+  textarea {
+    flex: 1;
+    resize: none;
+    max-height: 120px;
+    padding: 10px 12px;
+    font: inherit;
+    font-size: 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  #send { width: auto; padding: 11px 16px; flex: none; }
+</style>
+</head>
+<body>
+
+<!-- ВХОД -->
+<section id="join">
+  <div class="join-box">
+    <h1>Imperia</h1>
+    <p class="sub">Общий чат. Сообщения сохраняются.</p>
+
+    <label for="name">Твоё имя</label>
+    <input id="name" type="text" maxlength="30" autocomplete="nickname" placeholder="Как тебя называть">
+
+    <label for="room">Комната</label>
+    <input id="room" type="text" maxlength="40" placeholder="общий">
+
+    <div class="rules">
+      <b>Правила</b>
+      <ol id="rulesList"></ol>
+    </div>
+
+    <label class="check"><input id="accept" type="checkbox"> Прочитал(а) правила и согласен(на)</label>
+    <button id="enter" class="primary" type="button">Войти в чат</button>
+    <p id="joinError" class="error"></p>
+  </div>
+</section>
+
+<!-- ЧАТ -->
+<section id="chat" class="hidden">
+  <header>
+    <div>
+      <div class="title" id="roomTitle"></div>
+      <div class="me" id="meLabel"></div>
+    </div>
+    <button id="leave" class="linkbtn" type="button">Сменить</button>
+  </header>
+  <div id="status">Подключаюсь…</div>
+  <div id="list"></div>
+  <form id="form">
+    <textarea id="input" rows="1" maxlength="1000" placeholder="Сообщение" aria-label="Сообщение"></textarea>
+    <button id="send" class="primary" type="submit">Отправить</button>
+  </form>
+</section>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+// ====== НАСТРОЙКИ (можно менять) ======
+var DEFAULT_ROOM = "общий";
+var RULES = [
+  "Уважай других участников.",
+  "Без спама и рекламы.",
+  "Не публикуй чужие личные данные.",
+  "Сообщения видят все в комнате и их нельзя удалить."
+];
+// ======================================
+
+var firebaseConfig = {
+  apiKey: "AIzaSyA-VngdnbgfjUTnwMl0kr8IpvJZDiQ29Rg",
+  authDomain: "imperia-laakar.firebaseapp.com",
+  projectId: "imperia-laakar",
+  storageBucket: "imperia-laakar.firebasestorage.app",
+  messagingSenderId: "232422304071",
+  appId: "1:232422304071:web:551d09d7ddc21164734462"
+};
+firebase.initializeApp(firebaseConfig);
+var db = firebase.firestore();
+
+function $(id) { return document.getElementById(id); }
+function store(key, val) {
+  try { if (val === undefined) return localStorage.getItem(key); localStorage.setItem(key, val); } catch (e) { return null; }
+}
+
+var clientId = store("clientId");
+if (!clientId) { clientId = Math.random().toString(36).slice(2) + Date.now().toString(36); store("clientId", clientId); }
+
+var me = { name: "", room: "" };
+var unsubscribe = null;
+var loadTimer = null;
+
+// Правила на экране входа
+RULES.forEach(function (r) {
+  var li = document.createElement("li");
+  li.textContent = r;
+  $("rulesList").appendChild(li);
+});
+
+$("name").value = store("name") || "";
+$("room").value = store("room") || "";
+$("room").placeholder = DEFAULT_ROOM;
+if (store("accepted") === "1") $("accept").checked = true;
+
+function slugify(s) {
+  var slug = s.trim().toLowerCase().replace(/[^\p{L}\p{N}_-]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 40);
+  return slug || "obshchiy";
+}
+
+$("enter").addEventListener("click", function () {
+  var name = $("name").value.trim();
+  var roomRaw = $("room").value.trim() || DEFAULT_ROOM;
+  if (!name) { $("joinError").textContent = "Введи имя."; return; }
+  if (!$("accept").checked) { $("joinError").textContent = "Нужно согласиться с правилами."; return; }
+  $("joinError").textContent = "";
+  me.name = name;
+  me.room = slugify(roomRaw);
+  me.roomLabel = roomRaw;
+  store("name", name);
+  store("room", roomRaw);
+  store("accepted", "1");
+  openChat();
+});
+
+$("leave").addEventListener("click", function () {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  clearTimeout(loadTimer);
+  $("chat").classList.add("hidden");
+  $("join").classList.remove("hidden");
+});
+
+function setStatus(text, bad) {
+  var el = $("status");
+  el.textContent = text;
+  el.classList.toggle("bad", !!bad);
+  el.classList.toggle("hidden", !text);
+}
+
+function openChat() {
+  $("join").classList.add("hidden");
+  $("chat").classList.remove("hidden");
+  $("roomTitle").textContent = me.roomLabel;
+  $("meLabel").textContent = "Ты: " + me.name;
+  $("list").innerHTML = "";
+  setStatus("Подключаюсь…");
+
+  loadTimer = setTimeout(function () {
+    setStatus("Нет связи с базой. Проверь интернет.", true);
+  }, 10000);
+
+  var q = db.collection("rooms").doc(me.room).collection("messages")
+    .orderBy("createdAt", "asc").limitToLast(200);
+
+  unsubscribe = q.onSnapshot(function (snap) {
+    if (!snap.metadata.fromCache) { clearTimeout(loadTimer); setStatus(""); }
+    render(snap);
+  }, function (err) {
+    clearTimeout(loadTimer);
+    setStatus("Не удалось загрузить сообщения: " + (err.code || "ошибка"), true);
+  });
+}
+
+function pad(n) { return n < 10 ? "0" + n : "" + n; }
+
+function render(snap) {
+  var list = $("list");
+  var nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 120;
+  list.innerHTML = "";
+
+  if (snap.empty) {
+    var e = document.createElement("div");
+    e.className = "empty";
+    e.textContent = "Здесь пока тихо. Напиши первое сообщение.";
+    list.appendChild(e);
+    return;
+  }
+
+  var prev = null;
+  snap.forEach(function (doc) {
+    var d = doc.data({ serverTimestamps: "estimate" });
+    var mine = d.clientId === clientId;
+    var key = d.clientId + "|" + d.name;
+    var div = document.createElement("div");
+    div.className = "msg" + (mine ? " mine" : "") + (prev !== key ? " gap" : "");
+
+    if (!mine && prev !== key) {
+      var who = document.createElement("div");
+      who.className = "who";
+      who.textContent = d.name;
+      div.appendChild(who);
+    }
+    var text = document.createElement("div");
+    text.className = "text";
+    text.textContent = d.text;
+    div.appendChild(text);
+
+    if (d.createdAt && d.createdAt.toDate) {
+      var t = d.createdAt.toDate();
+      var time = document.createElement("div");
+      time.className = "time";
+      time.textContent = pad(t.getHours()) + ":" + pad(t.getMinutes());
+      div.appendChild(time);
+    }
+    list.appendChild(div);
+    prev = key;
+  });
+
+  if (nearBottom || list.dataset.first !== "done") {
+    list.scrollTop = list.scrollHeight;
+    list.dataset.first = "done";
+  }
+}
+
+$("form").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var input = $("input");
+  var text = input.value.trim();
+  if (!text) return;
+  input.value = "";
+  input.style.height = "auto";
+  input.focus();
+  db.collection("rooms").doc(me.room).collection("messages").add({
+    name: me.name,
+    text: text,
+    clientId: clientId,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function () {
+    $("list").scrollTop = $("list").scrollHeight;
+  }).catch(function (err) {
+    input.value = text;
+    setStatus("Сообщение не отправилось: " + (err.code || "ошибка"), true);
+  });
+});
+
+$("input").addEventListener("keydown", function (ev) {
+  if (ev.key === "Enter" && !ev.shiftKey && window.matchMedia("(hover: hover)").matches) {
+    ev.preventDefault();
+    $("form").requestSubmit();
+  }
+});
+$("input").addEventListener("input", function () {
+  this.style.height = "auto";
+  this.style.height = Math.min(this.scrollHeight, 120) + "px";
+});
+</script>
+</body>
+</html>
