@@ -3,36 +3,37 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Imperia</title>
 <style>
-:root{--gold:#d4af37;--ink:#f3ead6;--line:#5a4630;--panel:#1d1520;color-scheme:dark}
+:root{--gold:#b8922a;--ink:#1c2430;--line:#d9d2c3;--panel:#ffffff;color-scheme:light}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0}
-body{background:#140c12;color:var(--ink);font:16px/1.4 Georgia,serif}
+body{background:#fff;color:var(--ink);font:16px/1.4 Georgia,serif}
 .hidden{display:none!important}
 button{font:inherit;color:inherit;cursor:pointer}
-input,textarea,select{font:inherit;color:var(--ink);background:#2a1d26;border:1px solid var(--line);border-radius:10px;padding:11px 13px;width:100%}
+input,textarea,select{font:inherit;color:var(--ink);background:#f6f4ef;border:1px solid var(--line);border-radius:10px;padding:11px 13px;width:100%}
 .btn{background:linear-gradient(#e6c65a,#b8922a);color:#2a1a05;border:0;border-radius:10px;padding:12px;font-weight:700;width:100%;margin-top:10px}
 .btn.alt{background:none;color:var(--gold);border:1px solid var(--gold)}
-.err{color:#ff8a80;min-height:20px;font-size:14px;margin:8px 0 0}
-#join{min-height:100%;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(circle at 50% 0,#6b1428,#140c12 70%)}
+.err{color:#c62828;min-height:20px;font-size:14px;margin:8px 0 0}
+#join{min-height:100%;display:flex;align-items:center;justify-content:center;padding:20px;background:#fff}
 .box{width:100%;max-width:400px;text-align:center}
 h1{margin:6px 0 4px;color:var(--gold);letter-spacing:.04em}
 label{display:block;text-align:left;font-size:14px;opacity:.75;margin:14px 0 6px}
 #chat{height:100%;display:flex;flex-direction:column}
-header{display:flex;align-items:center;gap:12px;padding:calc(8px + env(safe-area-inset-top)) 14px 8px;background:#2a0e18;border-bottom:2px solid var(--gold)}
+header{display:flex;align-items:center;gap:12px;padding:calc(8px + env(safe-area-inset-top)) 14px 8px;background:#faf7f0;border-bottom:2px solid var(--gold)}
 header .t{flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 header small{display:block;font-weight:400;opacity:.7;font-size:12px}
-.ic{background:#3a1626;border:1px solid var(--gold);border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none;font-weight:700;color:var(--gold)}
+.ic{background:#f1e9d2;border:1px solid var(--gold);border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none;font-weight:700;color:var(--gold)}
 .ic img{width:100%;height:100%;object-fit:cover}
 .sm{width:22px;height:22px;font-size:12px;display:inline-flex;vertical-align:middle;margin-right:5px}
-#pin{padding:7px 14px;background:#3a2a10;border-bottom:1px solid var(--gold);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pin{padding:7px 14px;background:#fbf3d6;border-bottom:1px solid var(--gold);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #list{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px;touch-action:pan-y}
+#list[data-bg=white]{background:#f4f2ee}
 #list[data-bg=throne]{background:linear-gradient(90deg,transparent 44%,rgba(130,15,38,.6) 44% 56%,transparent 56%),repeating-linear-gradient(0deg,rgba(0,0,0,.4) 0 2px,transparent 2px 44px),repeating-linear-gradient(90deg,rgba(0,0,0,.28) 0 2px,transparent 2px 72px),#4a4850}
 #list[data-bg=knights]{background:conic-gradient(#1d1d24 25%,#3b3b48 0 50%,#1d1d24 0 75%,#3b3b48 0) 0 0/64px 64px}
 #list[data-bg=imperial]{background:repeating-linear-gradient(45deg,rgba(212,175,55,.2) 0 2px,transparent 2px 30px),repeating-linear-gradient(-45deg,rgba(212,175,55,.2) 0 2px,transparent 2px 30px),linear-gradient(#3a1250,#1c0a2a)}
 #list[data-bg=gold]{background:radial-gradient(circle at 50% 25%,#9a7a22,#3a2a08)}
 #list[data-bg=night]{background:radial-gradient(#fff 1px,transparent 1.6px) 0 0/50px 50px,linear-gradient(#0b1030,#1a1a40)}
-.msg{max-width:84%;padding:7px 11px;border-radius:14px;background:rgba(22,10,20,.86);border:1px solid var(--line);align-self:flex-start;overflow-wrap:anywhere;position:relative;transition:transform .1s}
-.msg.mine{align-self:flex-end;background:rgba(95,16,34,.92);border-color:var(--gold)}
+.msg{max-width:84%;padding:7px 11px;border-radius:14px;background:rgba(255,255,255,.93);border:1px solid var(--line);align-self:flex-start;overflow-wrap:anywhere;position:relative;transition:transform .1s}
+.msg.mine{align-self:flex-end;background:rgba(251,238,190,.96);border-color:var(--gold)}
 .who{font-size:13px;font-weight:700;color:var(--gold);margin-bottom:2px}
 .text{white-space:pre-wrap}
 .time{font-size:11px;opacity:.55;text-align:right;margin-top:2px}
@@ -40,21 +41,21 @@ header small{display:block;font-weight:400;opacity:.7;font-size:12px}
 .msg img.ph{max-width:100%;border-radius:10px;display:block}
 .msg audio{max-width:100%;height:36px}
 .msg video.rnd{width:200px;height:200px;border-radius:50%;object-fit:cover;display:block}
-.sys{align-self:center;max-width:94%;white-space:pre-wrap;font-size:13px;background:rgba(0,0,0,.7);border:1px solid var(--gold);border-radius:10px;padding:8px 12px;text-align:center}
-#replybar{padding:6px 14px;background:#2a1d26;font-size:13px;display:flex;justify-content:space-between;gap:8px}
-form{display:flex;gap:6px;align-items:flex-end;padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:#2a0e18;border-top:1px solid var(--gold)}
+.sys{align-self:center;max-width:94%;white-space:pre-wrap;font-size:13px;background:rgba(255,255,255,.95);border:1px solid var(--gold);border-radius:10px;padding:8px 12px;text-align:center}
+#replybar{padding:6px 14px;background:#f1ede2;font-size:13px;display:flex;justify-content:space-between;gap:8px}
+form{display:flex;gap:6px;align-items:flex-end;padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:#faf7f0;border-top:1px solid var(--gold)}
 form textarea{resize:none;max-height:110px;flex:1}
 .ib{background:none;border:0;font-size:22px;padding:8px 4px;flex:none}
-#note{text-align:center;font-size:13px;padding:8px;color:#ff8a80}
+#note{text-align:center;font-size:13px;padding:8px;color:#c62828}
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;z-index:10}
 .sheet{background:var(--panel);border-top:2px solid var(--gold);border-radius:16px 16px 0 0;width:100%;max-width:520px;max-height:85%;overflow-y:auto;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
 .sheet h3{margin:0 0 10px;color:var(--gold)}
 .row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .row .n{flex:1;min-width:120px}
-.row button,.row select{width:auto;padding:6px 10px;border-radius:8px;background:#3a1626;border:1px solid var(--line)}
+.row button,.row select{width:auto;padding:6px 10px;border-radius:8px;background:#f1e9d2;border:1px solid var(--line)}
 .row select{padding:6px}
 .bgs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-#rec{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+#rec{color:#fff;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
 #rec video{width:240px;height:240px;border-radius:50%;object-fit:cover;border:3px solid var(--gold)}
 </style></head><body>
 
@@ -103,7 +104,7 @@ var db=firebase.firestore(),auth=firebase.auth(),TS=firebase.firestore.FieldValu
 var $=function(i){return document.getElementById(i)};
 function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
 var RANKS=["","Место у параши","Пушечное мясо","Воин","Богач","Тортик Наполеон","Император"];
-var BGS={throne:"Тронный зал",knights:"Рыцарский зал",imperial:"Императорский",gold:"Золото",night:"Ночной замок"};
+var BGS={white:"Белый",throne:"Тронный зал",knights:"Рыцарский зал",imperial:"Императорский",gold:"Золото",night:"Ночной замок"};
 var star=function(n){return "★".repeat(n)};
 var me={},users={},meta={},msgs=[],isAdmin=false,wantEmp=false,reply=null,unsubs=[],baseKick=null,adminBody=null;
 function ms(t){return t&&t.toMillis?t.toMillis():0}
@@ -119,7 +120,7 @@ $("passOk").onclick=async function(){
     await db.doc("admins/"+auth.currentUser.uid).set({key:$("pass").value.trim()});
     isAdmin=true;wantEmp=true;err();
     $("stepPass").classList.add("hidden");$("stepName").classList.remove("hidden");
-    $("enter").textContent="Войти как император";$("name").focus();
+    $("name").focus();
   }catch(e){err((e.code==="permission-denied"?"База отказала: пароль неверный или правила не опубликованы. ":"")+"Код: "+(e.code||e.message))}
 };
 $("enter").onclick=async function(){
@@ -150,13 +151,13 @@ function leave(text){
 function av(url,name,cls){var d=el("span","ic "+(cls||""));if(url){var i=new Image();i.src=url;d.appendChild(i)}else d.textContent=(name||"?").charAt(0).toUpperCase();return d}
 function start(uid){
   me={id:uid};$("join").classList.add("hidden");$("chat").classList.remove("hidden");
-  $("list").dataset.bg=localStorage.getItem("bg")||"throne";
+  $("list").dataset.bg=localStorage.getItem("bg")||"white";
   unsubs.push(db.collection("users").onSnapshot(function(s){
     users={};s.forEach(function(d){users[d.id]=Object.assign({id:d.id},d.data())});
     if(!users[uid])return;me=users[uid];
     var k=ms(me.kickedAt);if(baseKick===null)baseKick=k;else if(k>baseKick)return leave("Тебя кикнули. Можно зайти снова.");
     $("me").textContent=star(me.rank)+" "+RANKS[me.rank]+" · "+me.name;
-    $("adm").classList.toggle("hidden",!isAdmin);
+    $("adm").classList.toggle("hidden",me.rank!==6);
     checkMute();render();if(adminBody&&adminBody.isConnected)fillAdmin();
   },function(e){leave("Нет доступа: "+e.code)}));
   unsubs.push(db.doc("meta/chat").onSnapshot(function(s){
@@ -249,12 +250,12 @@ function msgMenu(id){
   var m=msgs.find(function(x){return x.id===id});if(!m||m.type==="system")return;
   var b=sheet("Сообщение"),txt=m.text||"";
   btn(b,"Ответить",function(){setReply({id:m.id,name:m.name,text:txt.slice(0,60)});b.parentNode.remove()});
-  if(isAdmin){
+  if(me.rank===6){
     var pinned=meta.pinned&&meta.pinned.id===m.id;
     btn(b,pinned?"Открепить":"Закрепить",function(){
       db.doc("meta/chat").set({pinned:pinned?null:{id:m.id,name:m.name,text:txt.slice(0,80)}},{merge:true});b.parentNode.remove()},true);
   }
-  if(isAdmin||m.uid===me.id)btn(b,"Удалить",function(){db.collection("messages").doc(m.id).delete();b.parentNode.remove()},true);
+  if(me.rank===6||m.uid===me.id)btn(b,"Удалить",function(){db.collection("messages").doc(m.id).delete();b.parentNode.remove()},true);
 }
 
 /* жесты: зажать сообщение = меню, зажать фон = выбор фона, смахнуть влево = ответ */
@@ -285,7 +286,7 @@ $("top").onclick=function(){
   btn(b,"Сохранить",async function(){
     var u={name:n.value.trim()||me.name};if(f.files[0])u.avatar=await imgData(f.files[0],128,.7);
     await db.doc("users/"+me.id).update(u);b.parentNode.remove()});
-  if(isAdmin){
+  if(me.rank===6){
     b.appendChild(el("h3",null,"Чат")).style.marginTop="18px";
     var t=el("input");t.value=meta.title||"";t.placeholder="Название чата";t.maxLength=40;b.appendChild(t);
     var cf=el("input");cf.type="file";cf.accept="image/*";cf.style.marginTop="8px";b.appendChild(cf);
