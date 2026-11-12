@@ -66,32 +66,32 @@ form textarea{resize:none;max-height:110px;flex:1}
 <svg width="64" height="48" viewBox="0 0 64 48"><path d="M4 40V12l14 14 14-20 14 20 14-14v28z" fill="#d4af37"/><circle cx="4" cy="10" r="3" fill="#d4af37"/><circle cx="32" cy="4" r="3" fill="#d4af37"/><circle cx="60" cy="10" r="3" fill="#d4af37"/></svg>
 <h1>Imperia</h1>
 <div id="stepName">
-<label id="nameLbl" for="name">Напиши имя</label>
+<label id="nameLbl" for="name">Назови своё имя</label>
 <input id="name" type="text" maxlength="30" autocomplete="nickname">
-<button id="enter" class="btn">Войти в чат</button>
-<button id="empBtn" class="btn alt">Зайти как император</button>
+<button id="enter" class="btn">Войти в чертоги</button>
+<button id="empBtn" class="btn alt">Предстать как император</button>
 </div>
 <div id="stepPass" class="hidden">
-<label for="pass">Пароль императора</label>
+<label for="pass">Тайное слово императора</label>
 <input id="pass" type="password" inputmode="numeric">
-<button id="passOk" class="btn">Проверить</button>
-<button id="passBack" class="btn alt">Назад</button>
+<button id="passOk" class="btn">Назвать слово</button>
+<button id="passBack" class="btn alt">Отступить</button>
 </div>
 <p id="joinErr" class="err"></p>
-<p style="opacity:.35;font-size:12px;margin:14px 0 0">v7</p>
+<p style="opacity:.35;font-size:12px;margin:14px 0 0">v9</p>
 </div></section>
 
 <section id="chat" class="hidden">
 <header><button id="top" class="ic" aria-label="Профиль"></button>
 <div class="t"><span id="title"></span><small id="me"></small></div>
-<button id="adm" class="ic hidden" aria-label="Панель императора">👑</button></header>
+<button id="adm" class="ic hidden" aria-label="Совет императора">👑</button></header>
 <div id="pin" class="hidden"></div>
 <div id="list"></div>
 <div id="note" class="hidden"></div>
 <div id="replybar" class="hidden"><span id="replyTxt"></span><button id="replyX" class="ib" style="font-size:16px;padding:0">✕</button></div>
 <form id="form">
 <button type="button" class="ib" id="photo">📷</button>
-<textarea id="input" rows="1" maxlength="1000" placeholder="Сообщение"></textarea>
+<textarea id="input" rows="1" maxlength="1000" placeholder="Молви слово…"></textarea>
 <button type="button" class="ib" id="mic">🎤</button>
 <button type="submit" class="ib">➤</button>
 </form>
@@ -108,7 +108,7 @@ var $=function(i){return document.getElementById(i)};
 document.documentElement.dataset.theme=localStorage.getItem("theme")||"light";
 function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
 var star=function(n){return "★".repeat(n)};
-var me={},users={},meta={},msgs=[],isAdmin=false,wantEmp=false,reply=null,unsubs=[],baseKick=null,adminBody=null;
+var me={},users={},meta={},msgs=[],isAdmin=false,wantEmp=false,reply=null,unsubs=[],baseKick=null,adminBody=null,seenMe=false;
 function ms(t){return t&&t.toMillis?t.toMillis():0}
 function err(t){$("joinErr").textContent=t||""}
 
@@ -126,7 +126,7 @@ $("passOk").onclick=async function(){
   }catch(e){err((e.code==="permission-denied"?"База отказала: пароль неверный или правила не опубликованы. ":"")+"Код: "+(e.code||e.message))}
 };
 $("enter").onclick=async function(){
-  var name=$("name").value.trim();if(!name)return err("Введи имя.");
+  var name=$("name").value.trim();if(!name)return err("Назови своё имя.");
   try{
     await auth.signInAnonymously();var uid=auth.currentUser.uid;
     var ref=db.doc("users/"+uid),s=await ref.get();
@@ -137,22 +137,22 @@ $("enter").onclick=async function(){
 };
 
 function leave(text){
-  unsubs.forEach(function(u){u()});unsubs=[];baseKick=null;
+  unsubs.forEach(function(u){u()});unsubs=[];baseKick=null;seenMe=false;
   $("chat").classList.add("hidden");$("join").classList.remove("hidden");
   $("stepPass").classList.add("hidden");$("stepName").classList.remove("hidden");
-  $("enter").textContent="Войти в чат";wantEmp=false;err(text);
+  $("enter").textContent="Войти в чертоги";wantEmp=false;err(text);
 }
 
 /* ===== чат ===== */
 function av(url,name,cls){var d=el("span","ic "+(cls||""));if(url){var i=new Image();i.src=url;d.appendChild(i)}else d.textContent=(name||"?").charAt(0).toUpperCase();return d}
 function start(uid){
-  me={id:uid};$("join").classList.add("hidden");$("chat").classList.remove("hidden");
+  me={id:uid};seenMe=false;$("join").classList.add("hidden");$("chat").classList.remove("hidden");
   els={};$("list").innerHTML="";delete $("list").dataset.done;
   unsubs.push(db.collection("users").onSnapshot(function(s){
     users={};s.forEach(function(d){users[d.id]=Object.assign({id:d.id},d.data())});
-    if(!users[uid])return;me=users[uid];
-    var k=ms(me.kickedAt);if(baseKick===null)baseKick=k;else if(k>baseKick)return leave("Тебя кикнули. Можно зайти снова.");
-    $("me").textContent=star(me.rank)+" "+me.name+(me.title?" · "+me.title:"")+" · v7";
+    if(!users[uid]){if(seenMe)return leave("Тебя изгнали из королевства. Можно вернуться.");return}seenMe=true;me=users[uid];
+    var k=ms(me.kickedAt);if(baseKick===null)baseKick=k;else if(k>baseKick)return leave("Тебя изгнали из королевства. Можно вернуться.");
+    $("me").textContent=star(me.rank)+" "+me.name+(me.title?" · "+me.title:"")+" · v9";
     $("adm").classList.toggle("hidden",me.rank!==6);
     checkMute();refreshWho();
   },function(e){leave("Нет доступа: "+e.code)}));
@@ -170,7 +170,7 @@ setInterval(function(){if(me.id)checkMute()},15000);
 function checkMute(){
   var left=ms(me.mutedUntil)-Date.now(),n=$("note");
   n.classList.toggle("hidden",left<=0);
-  if(left>0)n.textContent="Ты в муте ещё "+Math.ceil(left/60000)+" мин.";
+  if(left>0)n.textContent="Ты в темнице ещё "+Math.ceil(left/60000)+" мин.";
   $("form").style.display=left>0?"none":"flex";
 }
 function pad(n){return n<10?"0"+n:n}
@@ -217,7 +217,7 @@ function render(){
 async function send(o){
   var d=Object.assign({uid:me.id,name:me.name,type:"text",createdAt:TS()},o);
   if(reply&&d.type!=="system"){d.reply=reply;setReply(null)}
-  try{await db.collection("messages").add(d)}catch(e){alert("Не отправилось: "+(e.code||e.message))}
+  try{await db.collection("messages").add(d)}catch(e){say("Не отправилось: "+(e.code||e.message))}
 }
 function setReply(r){reply=r;$("replybar").classList.toggle("hidden",!r);if(r)$("replyTxt").textContent="Ответ "+r.name+": "+r.text}
 $("replyX").onclick=function(){setReply(null)};
@@ -234,7 +234,7 @@ $("file").onchange=async function(){var f=this.files[0];if(f)send({type:"image",
 async function record(kind){
   var vid=kind==="video",stream;
   try{stream=await navigator.mediaDevices.getUserMedia(vid?{audio:true,video:{facingMode:"user",width:240,height:240,aspectRatio:1}}:{audio:true})}
-  catch(e){return alert("Нет доступа к микрофону/камере.")}
+  catch(e){return say("Нет доступа к микрофону/камере.")}
   var types=vid?["video/mp4","video/webm;codecs=vp8,opus","video/webm"]:["audio/mp4","audio/webm;codecs=opus","audio/webm"];
   var mime=types.find(function(t){return window.MediaRecorder&&MediaRecorder.isTypeSupported(t)})||"";
   var rec=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:200000,audioBitsPerSecond:32000}:{}),chunks=[],cancel=false;
@@ -247,7 +247,7 @@ async function record(kind){
   rec.onstop=function(){
     clearInterval(iv);stream.getTracks().forEach(function(t){t.stop()});o.remove();if(cancel)return;
     var b=new Blob(chunks,{type:(rec.mimeType||mime||(vid?"video/mp4":"audio/mp4")).split(";")[0]}),r=new FileReader();
-    r.onload=function(){if(r.result.length>900000)return alert("Слишком большое, запиши короче.");send({type:kind,text:vid?"⭕ Кружок":"🎤 Голосовое",data:r.result})};r.readAsDataURL(b);
+    r.onload=function(){if(r.result.length>900000)return say("Слишком большое, запиши короче.");send({type:kind,text:vid?"⭕ Кружок":"🎤 Голосовое",data:r.result})};r.readAsDataURL(b);
   };
   ok.onclick=function(){rec.stop()};no.onclick=function(){cancel=true;rec.stop()};rec.start();
 }
@@ -256,24 +256,28 @@ $("mic").onclick=function(){record("voice")};
 document.addEventListener("play",function(e){document.querySelectorAll("audio,video").forEach(function(x){if(x!==e.target)x.pause()})},true);
 
 /* ===== окна ===== */
+function say(t){var b=sheet(t);btn(b,"Ок",function(){b.parentNode.remove()},true)}
+function confirmBox(t,ok){var b=sheet(t);btn(b,"Да",function(){b.parentNode.remove();ok()});btn(b,"Отмена",function(){b.parentNode.remove()},true)}
+function askBox(t,val,ok){var b=sheet(t),i=el("input");i.value=val||"";i.maxLength=30;b.appendChild(i);btn(b,"Пожаловать",function(){b.parentNode.remove();ok(i.value.trim())});btn(b,"Отмена",function(){b.parentNode.remove()},true)}
+function guard(p){return p.catch(function(e){say("Не вышло: "+(e.code||e.message))})}
 function sheet(title){var o=el("div","ov"),b=el("div","sheet");o.onclick=function(e){if(e.target===o)o.remove()};b.appendChild(el("h3",null,title));o.appendChild(b);document.body.appendChild(o);return b}
 function btn(b,text,fn,alt){var x=el("button","btn"+(alt?" alt":""),text);x.onclick=fn;b.appendChild(x);return x}
 
 function themePicker(){
-  var b=sheet("Тема"),g=el("div","bgs");b.appendChild(g);
-  [["light","Светлая"],["dark","Тёмная"]].forEach(function(t){
+  var b=sheet("Убранство"),g=el("div","bgs");b.appendChild(g);
+  [["light","Дневное"],["dark","Ночное"]].forEach(function(t){
     btn(g,t[1],function(){localStorage.setItem("theme",t[0]);document.documentElement.dataset.theme=t[0];b.parentNode.remove()},true)});
 }
 function msgMenu(id){
   var m=msgs.find(function(x){return x.id===id});if(!m||m.type==="system")return;
-  var b=sheet("Сообщение"),txt=m.text||"";
-  btn(b,"Ответить",function(){setReply({id:m.id,name:m.name,text:txt.slice(0,60)});b.parentNode.remove()});
+  var b=sheet("Свиток"),txt=m.text||"";
+  btn(b,"Дать ответ",function(){setReply({id:m.id,name:m.name,text:txt.slice(0,60)});b.parentNode.remove()});
   if(me.rank===6){
     var pinned=meta.pinned&&meta.pinned.id===m.id;
-    btn(b,pinned?"Открепить":"Закрепить",function(){
+    btn(b,pinned?"Снять с врат":"Прибить к вратам",function(){
       db.doc("meta/chat").set({pinned:pinned?null:{id:m.id,name:m.name,text:txt.slice(0,80)}},{merge:true});b.parentNode.remove()},true);
   }
-  if(me.rank===6||m.uid===me.id)btn(b,"Удалить",function(){db.collection("messages").doc(m.id).delete();b.parentNode.remove()},true);
+  if(me.rank===6||m.uid===me.id)btn(b,"Сжечь свиток",function(){db.collection("messages").doc(m.id).delete();b.parentNode.remove()},true);
 }
 
 /* жесты: зажать сообщение = меню, зажать фон = выбор фона, смахнуть влево = ответ */
@@ -299,18 +303,18 @@ function msgMenu(id){
 
 /* ===== профиль и чат ===== */
 $("top").onclick=function(){
-  var b=sheet("Мой профиль"),n=el("input");n.value=me.name;n.maxLength=30;b.appendChild(n);
+  var b=sheet("Мой герб"),n=el("input");n.value=me.name;n.maxLength=30;b.appendChild(n);
   var f=el("input");f.type="file";f.accept="image/*";f.style.marginTop="8px";b.appendChild(f);
-  btn(b,"Сохранить",async function(){
+  btn(b,"Скрепить печатью",async function(){
     var u={name:n.value.trim()||me.name};if(f.files[0])u.avatar=await imgData(f.files[0],128,.7);
     await db.doc("users/"+me.id).update(u);b.parentNode.remove()});
-  btn(b,"Сменить тему",function(){b.parentNode.remove();themePicker()},true);
+  btn(b,"Сменить убранство",function(){b.parentNode.remove();themePicker()},true);
   if(me.rank===6){
-    btn(b,"👑 Панель императора",function(){b.parentNode.remove();$("adm").onclick()},true);
-    b.appendChild(el("h3",null,"Чат")).style.marginTop="18px";
+    btn(b,"👑 Совет императора",function(){b.parentNode.remove();$("adm").onclick()},true);
+    b.appendChild(el("h3",null,"Королевство")).style.marginTop="18px";
     var t=el("input");t.value=meta.title||"";t.placeholder="Название чата";t.maxLength=40;b.appendChild(t);
     var cf=el("input");cf.type="file";cf.accept="image/*";cf.style.marginTop="8px";b.appendChild(cf);
-    btn(b,"Сохранить чат",async function(){
+    btn(b,"Скрепить указ",async function(){
       var u={title:t.value.trim()};if(cf.files[0])u.avatar=await imgData(cf.files[0],128,.7);
       await db.doc("meta/chat").set(u,{merge:true});b.parentNode.remove()},true);
   }
@@ -327,23 +331,23 @@ function rankTable(ov){
 }
 async function setRank(u,r){
   if(r<1||r>6||me.rank!==6||u.id===me.id)return;
-  await db.doc("users/"+u.id).update({rank:r});
-  send({type:"system",text:"Рейтинг изменён: "+u.name+" → "+star(r)+"\n\n"+rankTable({id:u.id,rank:r})});
+  try{await db.doc("users/"+u.id).update({rank:r})}catch(e){return say("Не вышло: "+(e.code||e.message))}
+  send({type:"system",text:"Милость императора: "+u.name+" → "+star(r)+"\n\n"+rankTable({id:u.id,rank:r})});
 }
 async function clearChat(){
-  if(me.rank!==6||!confirm("Удалить ВСЕ сообщения? Это нельзя отменить."))return;
+  if(me.rank!==6)return;
   try{
     var docs=(await db.collection("messages").get()).docs;
-    for(var i=0;i<docs.length;i+=400){var bt=db.batch();docs.slice(i,i+400).forEach(function(d){bt.delete(d.ref)});await bt.commit()}
+    for(var i=0;i<docs.length;i+=20){await Promise.all(docs.slice(i,i+20).map(function(d){return d.ref.delete()}))}
     await db.doc("meta/chat").set({pinned:null},{merge:true});
     document.querySelectorAll(".ov").forEach(function(x){x.remove()});
-  }catch(e){alert("Не удалось очистить: "+(e.code||e.message))}
+  }catch(e){say("Геноцид не удался: "+(e.code||e.message))}
 }
 function everyone(){return Object.keys(users).map(function(k){return users[k]}).sort(function(a,b){return b.rank-a.rank})}
 function others(){return everyone().filter(function(u){return u.id!==me.id})}
 function pick(title,list,act,empty){
   var b=sheet(title);
-  if(!list.length)b.appendChild(el("p",null,empty||"Никого нет ещё."));
+  if(!list.length)b.appendChild(el("p",null,empty||"Подданных ещё нет."));
   list.forEach(function(u){
     var r=el("div","row");r.appendChild(av(u.avatar,u.name,"sm"));
     r.appendChild(el("div","n",star(u.rank)+" "+u.name+(u.title?" — "+u.title:"")+(ms(u.mutedUntil)>Date.now()?" 🔇":"")));
@@ -351,23 +355,24 @@ function pick(title,list,act,empty){
   });
 }
 function muteSheet(u){
-  var b=sheet("Мут: "+u.name),g=el("div","bgs");b.appendChild(g);
-  [[5,"5 минут"],[30,"30 минут"],[60,"1 час"],[1440,"1 день"]].forEach(function(o){
-    btn(g,o[1],function(){b.parentNode.remove();db.doc("users/"+u.id).update({mutedUntil:new Date(Date.now()+o[0]*60000)})},true)});
+  var b=sheet("Темница: "+u.name),g=el("div","bgs");b.appendChild(g);
+  [[5,"На 5 минут"],[30,"На полчаса"],[60,"На час"],[1440,"На сутки"]].forEach(function(o){
+    btn(g,o[1],function(){b.parentNode.remove();guard(db.doc("users/"+u.id).update({mutedUntil:new Date(Date.now()+o[0]*60000)}))},true)});
 }
 function rankSheet(u){
-  var b=sheet("Рейтинг: "+u.name),g=el("div","bgs");b.appendChild(g);
+  var b=sheet("Звёзды: "+u.name),g=el("div","bgs");b.appendChild(g);
   [1,2,3,4,5,6].forEach(function(r){btn(g,star(r),function(){b.parentNode.remove();setRank(u,r)},u.rank!==r)});
 }
 $("adm").onclick=function(){
   if(me.rank!==6)return;
-  var b=sheet("Панель императора"),g=el("div","bgs");b.appendChild(g);
-  btn(g,"🔇 Мут",function(){pick("Кого замутить",others(),muteSheet)},true);
-  btn(g,"🔊 Размут",function(){pick("Кого размутить",everyone().filter(function(u){return ms(u.mutedUntil)>Date.now()}),function(u){db.doc("users/"+u.id).update({mutedUntil:new Date(0)})},"Никто не в муте.")},true);
-  btn(g,"🚪 Кик",function(){pick("Кого кикнуть",others(),function(u){if(confirm("Кикнуть "+u.name+"?"))db.doc("users/"+u.id).update({kickedAt:TS()})})},true);
-  btn(g,"★ Рейтинг",function(){pick("Чей рейтинг менять",others(),rankSheet)},true);
-  btn(g,"🏷 Титул",function(){pick("Кому выдать титул",everyone(),function(u){var v=prompt("Титул для "+u.name+" (пусто — убрать):",u.title||"");if(v!==null)db.doc("users/"+u.id).update({title:v.trim().slice(0,30)})})},true);
-  btn(g,"🗑 Очистить весь чат",clearChat,true);
+  var b=sheet("Совет императора"),g=el("div","bgs");b.appendChild(g);
+  btn(g,"⛓ Бросить в темницу",function(){pick("Кого бросить в темницу",others(),muteSheet)},true);
+  btn(g,"🗝 Выпустить из темницы",function(){pick("Кого выпустить из темницы",everyone().filter(function(u){return ms(u.mutedUntil)>Date.now()}),function(u){guard(db.doc("users/"+u.id).update({mutedUntil:new Date(0)}))},"Темница пуста.")},true);
+  btn(g,"⚔ Изгнать из королевства",function(){pick("Кого изгнать",others(),function(u){confirmBox("Изгнать "+u.name+" из королевства?",function(){
+    guard(db.doc("users/"+u.id).update({kickedAt:TS()}).then(function(){return new Promise(function(r){setTimeout(r,1200)})}).then(function(){return db.doc("users/"+u.id).delete()}))})})},true);
+  btn(g,"★ Пожаловать звёзды",function(){pick("Кому пожаловать звёзды",others(),rankSheet)},true);
+  btn(g,"📜 Пожаловать титул",function(){pick("Кому пожаловать титул",everyone(),function(u){askBox("Титул для "+u.name+" (пусто — лишить)",u.title||"",function(v){guard(db.doc("users/"+u.id).update({title:v.slice(0,30)}))})})},true);
+  btn(g,"🔥 Устроить геноцид сообщений",function(){confirmBox("Устроить геноцид сообщений? Все они будут уничтожены навсегда.",clearChat)},true);
 };
 </script>
 </body></html>
