@@ -120,7 +120,7 @@ $("passOk").onclick=async function(){
     isAdmin=true;wantEmp=true;err();
     $("stepPass").classList.add("hidden");$("stepName").classList.remove("hidden");
     $("enter").textContent="Войти как император";$("name").focus();
-  }catch(e){err(e.code==="permission-denied"?"Неверный пароль.":"Ошибка: "+(e.code||e.message))}
+  }catch(e){err((e.code==="permission-denied"?"База отказала: пароль неверный или правила не опубликованы. ":"")+"Код: "+(e.code||e.message))}
 };
 $("enter").onclick=async function(){
   var name=$("name").value.trim();if(!name)return err("Введи имя.");
