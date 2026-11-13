@@ -31,7 +31,16 @@ header small{display:block;font-weight:400;opacity:.7;font-size:12px}
 .ic.av{width:34px;height:34px;font-size:14px}
 .ic img{width:100%;height:100%;object-fit:cover}
 .sm{width:22px;height:22px;font-size:12px;display:inline-flex;vertical-align:middle;margin-right:5px}
-#pin{padding:7px 14px;background:var(--bar);border-bottom:1px solid var(--line);border-left:3px solid var(--acc);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pin{display:flex;align-items:center;gap:10px;padding:6px 8px 6px 14px;background:var(--bar);border-bottom:1px solid var(--line);font-size:14px}
+#pseg{display:flex;flex-direction:column;gap:2px;width:3px;height:34px;flex:none}
+#pseg i{flex:1;border-radius:2px;background:var(--line)}
+#pseg i.on{background:var(--acc)}
+#pgo{flex:1;min-width:0;text-align:left;background:none;border:0;padding:0;color:inherit;font:inherit}
+#pgo b{display:block;color:var(--acc);font-size:13px;line-height:1.25}
+#pgo span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+#pun{font-size:16px;padding:6px 8px}
+.msg.flash{animation:flash 1.5s ease-out}
+@keyframes flash{0%,35%{box-shadow:0 0 0 3px var(--acc)}100%{box-shadow:0 1px 1px rgba(0,0,0,.13)}}
 #list{background:var(--chat);flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px;touch-action:pan-y}
 .r{display:flex;align-items:flex-end;gap:6px;max-width:92%;align-self:flex-start}
 .r.mine{flex-direction:row-reverse;align-self:flex-end}
@@ -78,14 +87,14 @@ form textarea{resize:none;max-height:110px;flex:1}
 <button id="passBack" class="btn alt">Отступить</button>
 </div>
 <p id="joinErr" class="err"></p>
-<p style="opacity:.35;font-size:12px;margin:14px 0 0">v10</p>
+<p style="opacity:.35;font-size:12px;margin:14px 0 0">v11</p>
 </div></section>
 
 <section id="chat" class="hidden">
 <header><button id="top" class="ic" aria-label="Профиль"></button>
 <div class="t"><span id="title"></span><small id="me"></small></div>
 <button id="adm" class="ic hidden" aria-label="Совет императора">👑</button></header>
-<div id="pin" class="hidden"></div>
+<div id="pin" class="hidden"><div id="pseg"></div><button id="pgo" type="button"><b id="plab"></b><span id="ptx"></span></button><button id="pun" class="ib hidden" type="button" aria-label="Снять с врат">✕</button></div>
 <div id="list"></div>
 <div id="note" class="hidden"></div>
 <div id="replybar" class="hidden"><span id="replyTxt"></span><button id="replyX" class="ib" style="font-size:16px;padding:0">✕</button></div>
@@ -108,7 +117,7 @@ var $=function(i){return document.getElementById(i)};
 document.documentElement.dataset.theme=localStorage.getItem("theme")||"light";
 function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
 var star=function(n){return "★".repeat(n)};
-var me={},users={},meta={},msgs=[],isAdmin=false,wantEmp=false,reply=null,unsubs=[],baseKick=null,adminBody=null,seenMe=false,canon={},groups={};
+var me={},users={},meta={},msgs=[],isAdmin=false,wantEmp=false,reply=null,unsubs=[],baseKick=null,adminBody=null,seenMe=false,canon={},groups={},editing=null,pinIdx=0,pinLen=0,msgsLoaded=false;
 function ms(t){return t&&t.toMillis?t.toMillis():0}
 function err(t){$("joinErr").textContent=t||""}
 
@@ -182,12 +191,12 @@ function leave(text){
 function av(url,name,cls){var d=el("span","ic "+(cls||""));if(url){var i=new Image();i.src=url;d.appendChild(i)}else d.textContent=(name||"?").charAt(0).toUpperCase();return d}
 function start(uid){
   me={id:uid};seenMe=false;$("join").classList.add("hidden");$("chat").classList.remove("hidden");
-  els={};$("list").innerHTML="";delete $("list").dataset.done;
+  els={};msgsLoaded=false;$("list").innerHTML="";delete $("list").dataset.done;
   unsubs.push(db.collection("users").onSnapshot(function(s){
     users={};s.forEach(function(d){users[d.id]=Object.assign({id:d.id},d.data())});buildGroups();
     if(!users[uid]){if(seenMe)return leave("Тебя изгнали из королевства. Можно вернуться.");return}seenMe=true;me=users[uid];
     var k=ms(me.kickedAt);if(baseKick===null)baseKick=k;else if(k>baseKick)return leave("Тебя изгнали из королевства. Можно вернуться.");
-    $("me").textContent=star(me.rank)+" "+me.name+(me.title?" · "+me.title:"")+" · v10";
+    $("me").textContent=star(me.rank)+" "+me.name+(me.title?" · "+me.title:"")+" · v11";
     $("adm").classList.toggle("hidden",me.rank!==6);
     checkMute();refreshWho();
   },function(e){leave("Нет доступа: "+e.code)}));
@@ -195,10 +204,10 @@ function start(uid){
     meta=s.data()||{};$("title").textContent=meta.title||"Imperia";
     var t=$("top");t.innerHTML="";t.appendChild(meta.avatar?av(meta.avatar,"",""):document.createTextNode("♛")).className;
     if(meta.avatar){t.firstChild.style.cssText="width:100%;height:100%;border:0"}
-    var p=$("pin");p.classList.toggle("hidden",!meta.pinned);if(meta.pinned)p.textContent="📌 "+meta.pinned.name+": "+meta.pinned.text;
+    renderPin();
   }));
   unsubs.push(db.collection("messages").orderBy("createdAt").limitToLast(100).onSnapshot(function(s){
-    msgs=s.docs.map(function(d){return Object.assign({id:d.id},d.data({serverTimestamps:"estimate"}))});render();
+    msgs=s.docs.map(function(d){return Object.assign({id:d.id},d.data({serverTimestamps:"estimate"}))});msgsLoaded=true;render();renderPin();
   }));
 }
 setInterval(function(){if(me.id)checkMute()},15000);
@@ -251,14 +260,17 @@ function msgEl(m){
   if(m.type==="image"){var i=new Image();i.className="ph";i.src=m.data;d.appendChild(i)}
   else if(m.type==="voice"){var a=el("audio");a.controls=true;a.preload="metadata";mediaSrc(m,a,"");d.appendChild(a)}
   else d.appendChild(el("div","text",m.text));
-  if(m.createdAt){var t=m.createdAt.toDate();d.appendChild(el("div","time",pad(t.getHours())+":"+pad(t.getMinutes())))}
+  if(m.createdAt){var t=m.createdAt.toDate();d.appendChild(el("div","time",(m.editedAt?"исправлено · ":"")+pad(t.getHours())+":"+pad(t.getMinutes())))}
   return r;
 }
 var els={};
 function render(){
   var l=$("list"),near=l.scrollHeight-l.scrollTop-l.clientHeight<150,i=0,ids={};
   msgs.forEach(function(m){
-    ids[m.id]=1;var e=els[m.id];if(!e){try{e=els[m.id]=msgEl(m)}catch(x){e=els[m.id]=el("div","sys","Не удалось показать сообщение")}}
+    ids[m.id]=1;var e=els[m.id],sg=(m.text||"")+"|"+(m.editedAt?1:0);
+    if(e&&e._sg!==sg){var ne;try{ne=msgEl(m)}catch(x){ne=el("div","sys","Не удалось показать сообщение")}if(e.parentNode)e.parentNode.replaceChild(ne,e);e=els[m.id]=ne}
+    if(!e){try{e=els[m.id]=msgEl(m)}catch(x){e=els[m.id]=el("div","sys","Не удалось показать сообщение")}}
+    e._sg=sg;if(e._m)e._m=m;
     if(l.children[i]!==e)l.insertBefore(e,l.children[i]||null);i++;
   });
   Object.keys(els).forEach(function(k){if(!ids[k]){els[k].remove();delete els[k]}});
@@ -271,9 +283,20 @@ async function send(o){
   if(reply&&d.type!=="system"){d.reply=reply;setReply(null)}
   try{await db.collection("messages").add(d)}catch(e){say("Не отправилось: "+(e.code||e.message))}
 }
-function setReply(r){reply=r;$("replybar").classList.toggle("hidden",!r);if(r)$("replyTxt").textContent="Ответ "+r.name+": "+r.text}
-$("replyX").onclick=function(){setReply(null)};
-$("form").onsubmit=function(e){e.preventDefault();var t=$("input").value.trim();if(!t)return;$("input").value="";send({text:t})};
+function setReply(r){if(r&&editing){editing=null;$("input").value=""}reply=r;$("replybar").classList.toggle("hidden",!r);if(r)$("replyTxt").textContent="Ответ "+r.name+": "+r.text}
+$("replyX").onclick=function(){if(editing){editing=null;$("input").value="";$("replybar").classList.add("hidden")}else setReply(null)};
+$("form").onsubmit=function(e){
+  e.preventDefault();var t=$("input").value.trim();if(!t)return;
+  if(editing){
+    var m=editing;editing=null;$("input").value="";$("replybar").classList.add("hidden");
+    if(t===m.text)return;
+    guard(db.collection("messages").doc(m.id).update({text:t,editedAt:TS()}).then(function(){
+      var p=pinsAll();if(me.rank===6&&p.some(function(x){return x.id===m.id}))return savePins(p.map(function(x){return x.id===m.id?Object.assign({},x,{text:t.slice(0,80)}):x}));
+    }));
+    return;
+  }
+  $("input").value="";send({text:t});
+};
 $("input").onkeydown=function(e){if(e.key==="Enter"&&!e.shiftKey&&matchMedia("(hover:hover)").matches){e.preventDefault();$("form").requestSubmit()}};
 
 function imgData(file,max,q){return new Promise(function(ok){
@@ -327,19 +350,72 @@ function copyText(t){
     try{document.execCommand("copy")?ok():no()}catch(e){no(e)}a.remove();
   });
 }
+/* ===== врата: закрепы (их может быть несколько) ===== */
+function pinsAll(){var p=meta.pins||[];if(!p.length&&meta.pinned)p=[meta.pinned];return p}
+function pinsShown(){
+  var p=pinsAll();if(!msgsLoaded)return p;
+  var all=msgs.length<100,old=msgs.length?ms(msgs[0].createdAt):0,have={};
+  msgs.forEach(function(m){have[m.id]=1});
+  return p.filter(function(x){return have[x.id]||(!all&&(!x.at||x.at<old))});
+}
+function savePins(p){return db.doc("meta/chat").set({pins:p,pinned:null},{merge:true})}
+function unpinId(id){
+  var p=pinsAll();if(!p.some(function(x){return x.id===id}))return Promise.resolve();
+  return savePins(p.filter(function(x){return x.id!==id}));
+}
+var healing=false;
+function renderPin(){
+  var p=pinsShown(),box=$("pin");
+  if(me.rank===6&&msgsLoaded&&p.length<pinsAll().length&&!healing){healing=true;savePins(p).catch(function(){}).then(function(){healing=false})}
+  box.classList.toggle("hidden",!p.length);
+  if(!p.length){pinLen=0;return}
+  if(p.length>pinLen)pinIdx=p.length-1;
+  pinLen=p.length;if(pinIdx>=p.length||pinIdx<0)pinIdx=p.length-1;
+  var cur=p[pinIdx],sg=$("pseg");sg.innerHTML="";
+  if(p.length>1)p.forEach(function(x,i){sg.appendChild(el("i",i===pinIdx?"on":""))});
+  else sg.appendChild(el("i","on"));
+  $("plab").textContent="Прибито к вратам"+(p.length>1?" · "+(pinIdx+1)+" из "+p.length:"");
+  $("ptx").textContent=cur.name+": "+cur.text;
+  $("pun").classList.toggle("hidden",me.rank!==6);
+}
+$("pgo").onclick=function(){
+  var p=pinsShown();if(!p.length)return;var x=p[pinIdx];
+  var e=els[x.id];
+  if(e){e.scrollIntoView({block:"center",behavior:"smooth"});var d=e.querySelector(".msg");if(d){d.classList.remove("flash");void d.offsetWidth;d.classList.add("flash")}}
+  else say("Это послание давно ушло вглубь свитков, до него не добраться.");
+  if(p.length>1){pinIdx=(pinIdx-1+p.length)%p.length;renderPin()}
+};
+$("pun").onclick=function(){
+  var p=pinsShown();if(!p.length||me.rank!==6)return;
+  guard(savePins(pinsAll().filter(function(x){return x.id!==p[pinIdx].id})));
+};
+
+/* ===== правка ===== */
+function setEdit(m){
+  editing=m;setReply(null);
+  if(m){$("replybar").classList.remove("hidden");$("replyTxt").textContent="Исправление: "+(m.text||"").slice(0,60);$("input").value=m.text||"";$("input").focus()}
+  else $("replybar").classList.add("hidden");
+}
 function msgMenu(id){
   var m=msgs.find(function(x){return x.id===id});if(!m||m.type==="system")return;
-  var b=sheet("Свиток"),txt=m.text||"";
+  var b=sheet("Свиток"),txt=m.text||"",isText=!m.type||m.type==="text";
   btn(b,"Дать ответ",function(){setReply({id:m.id,name:m.name,text:txt.slice(0,60)});b.parentNode.remove()});
-  if(!m.type||m.type==="text"){var cp=btn(b,"📋 Скопировать",function(){
-    copyText(txt).then(function(){cp.textContent="✓ Скопировано";setTimeout(function(){b.parentNode.remove()},600)},function(){cp.textContent="Не вышло скопировать"});
+  if(isText){var cp=btn(b,"Переписать слова",function(){
+    copyText(txt).then(function(){cp.textContent="Переписано";setTimeout(function(){b.parentNode.remove()},600)},function(){cp.textContent="Не вышло переписать"});
   },true)}
+  if(isText&&isMine(m))btn(b,"Исправить писание",function(){b.parentNode.remove();setEdit(m)},true);
   if(me.rank===6){
-    var pinned=meta.pinned&&meta.pinned.id===m.id;
+    var pinned=pinsAll().some(function(x){return x.id===m.id});
     btn(b,pinned?"Снять с врат":"Прибить к вратам",function(){
-      db.doc("meta/chat").set({pinned:pinned?null:{id:m.id,name:m.name,text:txt.slice(0,80)}},{merge:true});b.parentNode.remove()},true);
+      b.parentNode.remove();
+      var p=pinsAll();
+      guard(savePins(pinned?p.filter(function(x){return x.id!==m.id}):p.concat([{id:m.id,name:P(m).name,text:txt.slice(0,80),at:ms(m.createdAt)}])));
+    },true);
   }
-  if(me.rank===6||isMine(m))btn(b,"Сжечь свиток",function(){guard(db.collection("messages").doc(m.id).delete());b.parentNode.remove()},true);
+  if(me.rank===6||isMine(m))btn(b,"Сжечь свиток",function(){
+    b.parentNode.remove();
+    guard(db.collection("messages").doc(m.id).delete().then(function(){if(editing&&editing.id===m.id)setEdit(null);return unpinId(m.id).catch(function(){})}));
+  },true);
 }
 
 /* жесты: зажать сообщение = меню, зажать фон = выбор фона, смахнуть влево = ответ */
@@ -401,7 +477,7 @@ async function clearChat(){
   try{
     var docs=(await db.collection("messages").get()).docs;
     for(var i=0;i<docs.length;i+=20){await Promise.all(docs.slice(i,i+20).map(function(d){return d.ref.delete()}))}
-    await db.doc("meta/chat").set({pinned:null},{merge:true});
+    await db.doc("meta/chat").set({pins:[],pinned:null},{merge:true});
     document.querySelectorAll(".ov").forEach(function(x){x.remove()});
   }catch(e){say("Геноцид не удался: "+(e.code||e.message))}
 }
