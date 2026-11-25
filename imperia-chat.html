@@ -714,6 +714,7 @@ canvas{display:block;touch-action:none}
 .bt{position:fixed;z-index:3;background:rgba(20,12,18,.55);border:2px solid rgba(255,255,255,.55);border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:700;touch-action:none}
 #bE{right:16px;bottom:calc(24px + env(safe-area-inset-bottom));width:84px;height:84px;font-size:13px;border-color:#ffd24a}
 #bR{right:112px;bottom:calc(20px + env(safe-area-inset-bottom));width:52px;height:52px;font-size:12px}
+#bJ{right:84px;bottom:calc(112px + env(safe-area-inset-bottom));width:56px;height:56px;font-size:12px}
 #bC{right:16px;bottom:calc(120px + env(safe-area-inset-bottom));width:52px;height:52px;font-size:22px}
 #bA{right:16px;top:calc(12px + env(safe-area-inset-top));width:46px;height:46px;font-size:22px}
 #bR.on{background:#b8922a}
@@ -731,7 +732,7 @@ canvas{display:block;touch-action:none}
 #ap .r{display:flex;justify-content:space-between;align-items:center;margin:8px 0;gap:8px}
 </style></head><body>
 <div id="cl"></div><div id="toast"></div><div id="jb"><div id="jk"></div></div>
-<div class="bt" id="bE">—</div><div class="bt" id="bR">Бег</div><div class="bt" id="bC">💬</div><div class="bt hidden" id="bA" style="display:none">👑</div>
+<div class="bt" id="bE">—</div><div class="bt" id="bR">Бег</div><div class="bt" id="bJ">Прыг</div><div class="bt" id="bC">💬</div><div class="bt hidden" id="bA" style="display:none">👑</div>
 <div id="crt"></div><div id="ap"><div id="apb"></div></div>
 <div id="cin"><input id="ci" maxlength="120" placeholder="Сообщение…" autocomplete="off"><button id="cs">➤</button></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>
@@ -763,9 +764,9 @@ const GT={value:0},CL=new THREE.Group();sc.add(CL);
  gr.instanceColor.needsUpdate=true;gr.userData.grass=1;sc.add(gr)}
 {const v=document.createElement('div');v.style.cssText='position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 55%,rgba(10,15,30,.35) 100%)';R.domElement.after(v)}
 // колизии
-const BOXES=[],CIRS=[];
+const BOXES=[],CIRS=[];let JY=0,JVy=0,JGO=0,LDX=0,LDZ=0;
 const LIM=168;
-function blocked(x,z,r,y=0){for(const b of BOXES)if(x>b[0]-r&&x<b[2]+r&&z>b[1]-r&&z<b[3]+r&&lv(b[4],y))return true;for(const d of DOORS)if(LK[d.id]&&ME.rank<10){const b=d.b;if(x>b[0]-r&&x<b[2]+r&&z>b[1]-r&&z<b[3]+r&&lv(b[4],y))return true}for(const c of CIRS)if(Math.hypot(x-c[0],z-c[1])<r+c[2])return true;return Math.abs(x)>LIM||Math.abs(z)>LIM}
+function blocked(x,z,r,y=0){for(const b of BOXES)if(x>b[0]-r&&x<b[2]+r&&z>b[1]-r&&z<b[3]+r&&lv(b[4],y)&&!(b[5]!=null&&JY>b[5]))return true;for(const d of DOORS)if(LK[d.id]&&ME.rank<10){const b=d.b;if(x>b[0]-r&&x<b[2]+r&&z>b[1]-r&&z<b[3]+r&&lv(b[4],y))return true}for(const c of CIRS)if(Math.hypot(x-c[0],z-c[1])<r+c[2])return true;for(const v of VEH)if(v!==st.veh&&Math.hypot(x-v.x,z-v.z)<r+1)return true;return Math.abs(x)>LIM||Math.abs(z)>LIM}
 // холмы (овальные)
 const HL=[[-90,-40,30,22,6],[85,-70,26,32,7],[115,40,32,22,5],[-75,85,28,24,6],[45,115,24,30,5.5],[-125,10,22,28,5],[5,-115,32,24,7],[-40,-90,18,14,3.5]];
 HL.forEach(h=>{const m=new THREE.Mesh(new THREE.SphereGeometry(1,28,14).scale(h[2],h[4],h[3]),mat(0x6dba52));m.position.set(h[0],0,h[1]);m.receiveShadow=true;sc.add(m)});
@@ -789,7 +790,7 @@ add(BX(7,.05,150),0xcdb98a,0,.03,97,sc,0).receiveShadow=true;
 function fence(ax,f,a,b,gaps){let p=a,seg=[];gaps.forEach(g=>{if(g[0]>p)seg.push([p,g[0]]);p=g[1]});if(p<b)seg.push([p,b]);
  seg.forEach(q=>{const L=q[1]-q[0],m=(q[0]+q[1])/2;[.5,1].forEach(y=>ax=='x'?add(BX(L,.1,.1),wood,m,y,f,sc,0):add(BX(.1,.1,L),wood,f,y,m,sc,0));
   for(let u=q[0];u<=q[1]+.01;u+=3)ax=='x'?add(BX(.2,1.2,.2),wood,u,.6,f,sc,0):add(BX(.2,1.2,.2),wood,f,.6,u,sc,0);
-  ax=='x'?BOXES.push([q[0],f-.15,q[1],f+.15]):BOXES.push([f-.15,q[0],f+.15,q[1]])})}
+  ax=='x'?BOXES.push([q[0],f-.15,q[1],f+.15,undefined,1.2]):BOXES.push([f-.15,q[0],f+.15,q[1],undefined,1.2])})}
 [-1,1].forEach(k=>{const a=Math.min(k*10,k*46),b=Math.max(k*10,k*46);fence('x',28,a,b,[]);fence('x',60,a,b,[]);fence('z',k*46,28,60,[]);fence('z',k*10,28,60,[[40,48]]);
  for(let i=0;i<3;i++){const x=k*(18+i*9),z=52+rd()*5;const h=add(CY(.7,.7,1.2,10),0xd9b84a,x,.7,z);h.rotation.z=Math.PI/2;CIRS.push([x,z,1])}
  add(BX(3,.6,.9),wood,k*14,.3,31);add(BX(2.7,.05,.7),0x4a8ad0,k*14,.62,31,sc,0);BOXES.push([k*14-1.5,30.5,k*14+1.5,31.5])});
@@ -900,7 +901,7 @@ function mkVeh(id,x,z,cart){const g=mkHorse(cart),v={id,g,x,z,h:0,tx:x,tz:z,th:0
  if(cart)[[-.5,-3.0],[.5,-3.0],[-.5,-4.2],[.5,-4.2]].forEach(s=>v.slots.push({x:s[0],y:1.25,z:s[1],p:1}));
  VEH.push(v);return v}
 mkVeh('h0',-12,34);mkVeh('h1',12,34);mkVeh('h2',-22,44);mkVeh('c0',-6,48,1);mkVeh('c1',8,50,1);
-VEH.forEach(v=>{CIRS.push([v.x,v.z,0])});
+
 // состояние
 const ME={id:'',name:'?',rank:3,title:'',adm:0},P={x:0,y:0,z:30,h:Math.PI},PL={};let fz={all:0,ids:{}},crt={on:0,role:'',an:'',bn:'',id:''};
 const ch=mkHuman();ch.position.set(P.x,0,P.z);sc.add(ch);
@@ -909,13 +910,13 @@ function frozen(){return ME.rank<10&&(fz.all||fz.ids[ME.id]||crt.on&&crt.role)}
 function say(t){const e=$('toast');e.textContent=t;e.style.opacity=1;clearTimeout(say.t);say.t=setTimeout(()=>e.style.opacity=0,2400)}
 function inCastle(x,z){return false}
 // ввод
-addEventListener('keydown',e=>{if(e.target.tagName=='INPUT')return;mvK[e.code]=1;if(e.code=='KeyE')act();if(e.code=='ShiftLeft')run=true});addEventListener('keyup',e=>{mvK[e.code]=0;if(e.code=='ShiftLeft')run=false});
+addEventListener('keydown',e=>{if(e.target.tagName=='INPUT')return;mvK[e.code]=1;if(e.code=='Space'){e.preventDefault();JGO=1}if(e.code=='KeyE')act();if(e.code=='ShiftLeft')run=true});addEventListener('keyup',e=>{mvK[e.code]=0;if(e.code=='ShiftLeft')run=false});
 const jb=$('jb'),jk=$('jk');let jid=null;
 jb.addEventListener('pointerdown',e=>{jid=e.pointerId;jb.setPointerCapture(jid);jm(e)});jb.addEventListener('pointermove',e=>{if(e.pointerId==jid)jm(e)});['pointerup','pointercancel'].forEach(n=>jb.addEventListener(n,e=>{if(e.pointerId==jid){jid=null;jv.x=jv.y=0;jk.style.left=jk.style.top='40px'}}));
 function jm(e){const r=jb.getBoundingClientRect();let dx=(e.clientX-r.left-60)/50,dy=(e.clientY-r.top-60)/50,l=Math.hypot(dx,dy);if(l>1){dx/=l;dy/=l}jv.x=dx;jv.y=-dy;jk.style.left=40+dx*40+'px';jk.style.top=40+dy*40+'px'}
 let dr=null;R.domElement.addEventListener('pointerdown',e=>{dr={id:e.pointerId,x:e.clientX,y:e.clientY};R.domElement.setPointerCapture(e.pointerId)});R.domElement.addEventListener('pointermove',e=>{if(dr&&dr.id==e.pointerId){yaw-=(e.clientX-dr.x)*.006;pit=clamp(pit+(e.clientY-dr.y)*.005,.1,1.3);dr.x=e.clientX;dr.y=e.clientY}});['pointerup','pointercancel'].forEach(n=>R.domElement.addEventListener(n,()=>dr=null));
 R.domElement.addEventListener('wheel',e=>dist=clamp(dist+e.deltaY*.01,3,14));
-$('bE').addEventListener('click',act);$('bR').addEventListener('click',()=>{run=!run;$('bR').classList.toggle('on',run)});
+$('bE').addEventListener('click',act);$('bJ').addEventListener('pointerdown',e=>{e.preventDefault();JGO=1});$('bR').addEventListener('click',()=>{run=!run;$('bR').classList.toggle('on',run)});
 // действия
 function occ(){const o={};for(const id in PL){const p=PL[id];if(p.v)o[p.v+':'+p.sl]=1;else if(p.r==1||p.r==3)o['s'+Math.round(p.tx)+':'+Math.round(p.tz)]=1}return o}
 function target(){if(st.m)return {k:'off'};const o=occ();let b=null,bd=3.2;for(const s of SEATS){if(Math.abs(s.top-P.y-.6)>2.8)continue;if(o['s'+Math.round(s.x)+':'+Math.round(s.z)])continue;const d=Math.hypot(s.x-P.x,s.z-P.z);if(d<bd){bd=d;b={k:'seat',s}}}
@@ -959,12 +960,14 @@ function loop(t){requestAnimationFrame(loop);const dt=Math.min(.05,(t-last)/1000
  const can=!frozen()&&(st.m==0||st.sl==0&&st.veh);let mv=false,spd=0;
  if(can&&il>.05){const f=[Math.sin(yaw),Math.cos(yaw)],rt=[-Math.cos(yaw),Math.sin(yaw)],dx=f[0]*iy+rt[0]*ix,dz=f[1]*iy+rt[1]*ix,a=Math.atan2(dx,dz);
   if(st.veh){const v=st.veh;let da=Math.atan2(Math.sin(a-v.h),Math.cos(a-v.h));v.h+=da*Math.min(1,dt*3);const sp=(run?11:6.5)*Math.min(1,il);const nx=v.x+Math.sin(v.h)*sp*dt,nz=v.z+Math.cos(v.h)*sp*dt;if(!blocked(nx,nz,1.3)){v.x=nx;v.z=nz}else if(!blocked(nx,v.z,1.3))v.x=nx;else if(!blocked(v.x,nz,1.3))v.z=nz;v.tx=v.x;v.tz=v.z;v.th=v.h;mv=true}
-  else{const sp=(run?8:4)*il,nx=P.x+dx/il*sp*dt*(il>1?1:1),nz=P.z+dz/il*sp*dt;const k=Math.hypot(dx,dz)||1,mx=dx/k*sp*dt,mz=dz/k*sp*dt;if(!blocked(P.x+mx,P.z,.4,P.y))P.x+=mx;if(!blocked(P.x,P.z+mz,.4,P.y))P.z+=mz;let da=Math.atan2(Math.sin(a-P.h),Math.cos(a-P.h));P.h+=da*Math.min(1,dt*12);mv=true;spd=sp}}
+  else{const sp=(run?8:4)*il,nx=P.x+dx/il*sp*dt*(il>1?1:1),nz=P.z+dz/il*sp*dt;const k=Math.hypot(dx,dz)||1,mx=dx/k*sp*dt,mz=dz/k*sp*dt;LDX=mx;LDZ=mz;if(!blocked(P.x+mx,P.z,.4,P.y))P.x+=mx;if(!blocked(P.x,P.z+mz,.4,P.y))P.z+=mz;let da=Math.atan2(Math.sin(a-P.h),Math.cos(a-P.h));P.h+=da*Math.min(1,dt*12);mv=true;spd=sp}}
  // положение меня
  if(st.veh){const v=st.veh,s=v.slots[st.sl];if(st.sl>0){const d=VEH.find(u=>u===v);}P.h=v.h;const c=Math.cos(v.h),sn=Math.sin(v.h);P.x=v.x+s.x*c+s.z*sn;P.z=v.z-s.x*sn+s.z*c}
  if(st.m==1&&st.seat){P.x=st.seat.x;P.z=st.seat.z;P.h=st.seat.h}
+ if(st.m!=0){JY=0;JVy=0;JGO=0}if(JGO){JGO=0;if(JY==0&&!frozen())JVy=9}
+ if(JY>0||JVy>0){JVy-=22*dt;JY+=JVy*dt;if(JY<=0){JY=0;JVy=0;const ll=Math.hypot(LDX,LDZ)||1;for(let i=0;i<40&&blocked(P.x,P.z,.4,P.y);i++){P.x+=LDX/ll*.1;P.z+=LDZ/ll*.1}}}
  const gy=flr(P.x,P.z,P.y);P.y+=(gy-P.y)*Math.min(1,dt*14);let py=P.y;if(st.seat)py=st.seat.top-.94;else if(st.veh)py=gy+st.veh.slots[st.sl].y-.94;
- ch.position.set(P.x,py,P.z);ch.rotation.y=P.h;pose(ch,st.m,tm,spd,dt);tickBub(ch,dt);
+ ch.position.set(P.x,py+JY,P.z);ch.rotation.y=P.h;pose(ch,st.m,tm,spd,dt);tickBub(ch,dt);
  // техника
  for(const v of VEH){const driven=PL&&Object.values(PL).find(p=>p.v==v.id&&p.sl==0);if(st.veh===v&&st.sl==0){}else{let tx=v.rx!=null?v.rx:v.x,tz=v.rz!=null?v.rz:v.z,th=v.rh!=null?v.rh:v.h;if(driven){tx=driven.tx;tz=driven.tz;th=driven.th}if(st.veh===v&&st.sl>0){const d=driven;if(d){tx=d.tx;tz=d.tz;th=d.th}}
   const ox=v.x,oz=v.z;v.x+=(tx-v.x)*Math.min(1,dt*5);v.z+=(tz-v.z)*Math.min(1,dt*5);v.h+=Math.atan2(Math.sin(th-v.h),Math.cos(th-v.h))*Math.min(1,dt*6);v.mvd=Math.hypot(v.x-ox,v.z-oz)/dt}
@@ -982,7 +985,7 @@ function loop(t){requestAnimationFrame(loop);const dt=Math.min(.05,(t-last)/1000
  cam.position.set(clamp(cx,-171,171),Math.max(cyv,flr(cx,cz,P.y)+1),clamp(cz,-171,171));cam.lookAt(P.x,py+1.5,P.z);
  sun.position.set(P.x+50,90,P.z+30);sun.target.position.set(P.x,0,P.z);
  // сеть
- nt-=dt;if(nt<=0){nt=.35;const x=Math.round(P.x*10)/10,z=Math.round(P.z*10)/10,h=Math.round(P.h*100)/100,sg=x+'|'+z+'|'+h+'|'+Math.round(P.y)+'|'+st.m+(st.veh?st.veh.id+st.sl:'');if(sg!==lsig||tm-lsend>5){lsig=sg;lsend=tm;post({t:'pos',x,z,h,r:(st.m==1||st.m==3)&&!st.veh?st.m:0,y:Math.round(P.y*10)/10,v:st.veh?st.veh.id:'',sl:st.sl})}}
+ nt-=dt;if(nt<=0){nt=.35;const x=Math.round(P.x*10)/10,z=Math.round(P.z*10)/10,h=Math.round(P.h*100)/100,sg=x+'|'+z+'|'+h+'|'+Math.round(P.y)+'|'+Math.round(JY*3)+'|'+st.m+(st.veh?st.veh.id+st.sl:'');if(sg!==lsig||tm-lsend>5){lsig=sg;lsend=tm;post({t:'pos',x,z,h,r:(st.m==1||st.m==3)&&!st.veh?st.m:0,y:Math.round((P.y+JY)*10)/10,v:st.veh?st.veh.id:'',sl:st.sl})}}
  GT.value=tm;CL.rotation.y+=dt*.003;R.render(sc,cam)}
 say('Добро пожаловать! Замок на севере, лошади и повозки у ворот. 💬 — чат');post({t:'hello'});requestAnimationFrame(loop);
 <\/script></body></html>
